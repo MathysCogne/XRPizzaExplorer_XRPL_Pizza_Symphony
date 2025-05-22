@@ -23,7 +23,20 @@ const TransactionCounter: React.FC<TransactionCounterProps> = ({ txCount, bpm })
           <span>Beats Per Minute</span>
           <span className="font-bold">{bpm} BPM</span>
         </div>
-        <Progress value={bpm} className="h-4" />
+        <Progress value={bpm} max={180} className="h-4" />
+      </div>
+      
+      <div className="flex items-center justify-center gap-2 my-2">
+        {Array(8).fill(0).map((_, i) => (
+          <div
+            key={`pulse-${i}`}
+            className={`w-2 h-8 bg-pizza-pink rounded-full transition-all duration-300 opacity-30 ${i % 4 === 0 ? 'animate-pulse' : ''}`}
+            style={{
+              animationDelay: `${i * 0.1}s`,
+              height: `${Math.max(12, Math.min(32, (bpm / 180) * 32))}px`
+            }}
+          />
+        ))}
       </div>
       
       <div className="text-center mt-4 text-sm italic">

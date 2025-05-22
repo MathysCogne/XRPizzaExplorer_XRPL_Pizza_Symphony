@@ -134,9 +134,18 @@ class AudioEngine {
     
     // Create a short envelope for the note
     const gainNode = this.gainNodes[randomIndex];
+    const frequency = this.oscillators[randomIndex].frequency.value;
+    
     gainNode.gain.setValueAtTime(0.1, now);
     gainNode.gain.linearRampToValueAtTime(0.3, now + 0.01);
     gainNode.gain.exponentialRampToValueAtTime(0.1, now + 0.2);
+    
+    // Dispatch custom event for visualization
+    const noteId = `note-${Date.now()}-${Math.random()}`;
+    const noteEvent = new CustomEvent('notePlayed', { 
+      detail: { id: noteId, frequency, timestamp: Date.now() }
+    });
+    window.dispatchEvent(noteEvent);
   }
   
   public changePizzaType(type: PizzaType): void {

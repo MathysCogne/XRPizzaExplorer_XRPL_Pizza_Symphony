@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import Pizza from '@/components/Pizza';
 import PizzaTypeSelector, { PizzaType } from '@/components/PizzaTypeSelector';
 import TransactionCounter from '@/components/TransactionCounter';
 import FlyingTopping from '@/components/FlyingTopping';
+import NoteVisualizer from '@/components/NoteVisualizer';
+import TransactionDetails from '@/components/TransactionDetails';
 import { Button } from '@/components/ui/button';
 import { xrplService, Transaction } from '@/services/XrplService';
 import { audioEngine } from '@/services/AudioEngine';
@@ -17,6 +18,7 @@ const Index = () => {
   const [txCount, setTxCount] = useState(0);
   const [bpm, setBpm] = useState(80);
   const [toppings, setToppings] = useState<{ type: 'pepperoni' | 'basil' | 'pineapple' | 'cheese', id: string, delay: number }[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   
   // Map pizza types to topping types
   const pizzaToToppingMap = {
@@ -45,6 +47,9 @@ const Index = () => {
       
       setToppings(prev => [...prev.slice(-10), topping]);
       
+      // Keep track of transactions for the details panel
+      setTransactions(prev => [...prev.slice(-10), tx]);
+      
       return newCount;
     });
   };
@@ -65,6 +70,7 @@ const Index = () => {
       xrplService.resetTxCount();
       setTxCount(0);
       setBpm(80);
+      setTransactions([]);
       audioEngine.start();
       xrplService.connect();
       setIsPlaying(true);
@@ -176,9 +182,15 @@ const Index = () => {
           />
         </div>
         
-        {/* Transaction counter */}
-        <div className="flex justify-center mb-8">
-          <TransactionCounter txCount={txCount} bpm={bpm} />
+        {/* Visualization and Transaction Details */}
+        <div className="flex flex-col md:flex-row gap-4 justify-center mb-8">
+          <div className="flex flex-col w-full md:w-1/2 items-center gap-4">
+            <TransactionCounter txCount={txCount} bpm={bpm} />
+            <NoteVisualizer isPlaying={isPlaying} />
+          </div>
+          <div className="w-full md:w-1/2 flex justify-center">
+            <TransactionDetails transactions={transactions} />
+          </div>
         </div>
         
         {/* Footer */}
