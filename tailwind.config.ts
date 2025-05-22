@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				pizza: {
+					yellow: '#FFEEAD',
+					pink: '#FFAAA7',
+					lavender: '#A8D8EA',
+					green: '#C3E8BD',
+					crust: '#D2691E',
+					sauce: '#FF6347',
 				}
 			},
 			borderRadius: {
@@ -84,11 +93,41 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'spin-slow': {
+					'0%': { transform: 'rotate(0deg)' },
+					'100%': { transform: 'rotate(360deg)' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-10px)' }
+				},
+				'bounce-slight': {
+					'0%, 100%': { transform: 'translateY(0)' },
+					'50%': { transform: 'translateY(-5px)' }
+				},
+				'scale-bounce': {
+					'0%, 100%': { transform: 'scale(1)' },
+					'50%': { transform: 'scale(1.05)' }
+				},
+				'fly-topping': {
+					'0%': { transform: 'translateX(-100%) translateY(0) rotate(0deg)', opacity: '0' },
+					'10%': { opacity: '1' },
+					'90%': { opacity: '1' },
+					'100%': { transform: 'translateX(100vw) translateY(50px) rotate(720deg)', opacity: '0' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'spin-slow': 'spin-slow 12s linear infinite',
+				'float': 'float 3s ease-in-out infinite',
+				'bounce-slight': 'bounce-slight 2s ease-in-out infinite',
+				'scale-bounce': 'scale-bounce 2s ease-in-out infinite',
+				'fly-topping': 'fly-topping 3s linear'
+			},
+			fontFamily: {
+				'baloo': ['"Baloo 2"', 'cursive']
 			}
 		}
 	},
