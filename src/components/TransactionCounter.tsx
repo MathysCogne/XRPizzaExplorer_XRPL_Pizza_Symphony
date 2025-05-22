@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
-import { Star, Trophy, Award, PartyPopper } from 'lucide-react';
+import { Star, Trophy, Award, PartyPopper, Blocks, FileText, Clock } from 'lucide-react';
 
 interface TransactionCounterProps {
   txCount: number;
@@ -26,6 +26,11 @@ const TransactionCounter: React.FC<TransactionCounterProps> = ({ txCount, bpm })
     { icon: <PartyPopper className="text-pizza-pink" />, name: "Beat Maestro", description: "Reach 50 transactions", unlocked: txCount >= 50 },
   ];
   
+  // Calculate blocks (for this demo, we'll count 1 block per 3 transactions)
+  const blocksCount = Math.floor(txCount / 3);
+  const txsInCurrentBlock = txCount % 3;
+  const blockProgress = (txsInCurrentBlock / 3) * 100;
+  
   return (
     <div className="w-full max-w-md bg-white/70 rounded-2xl p-4 shadow-lg">
       <div className="flex justify-between items-center mb-2">
@@ -34,6 +39,24 @@ const TransactionCounter: React.FC<TransactionCounterProps> = ({ txCount, bpm })
           <p className="text-gray-600 text-sm">Live from the mempool pizzeria</p>
         </div>
         <div className="text-4xl font-bold text-pizza-pink">{txCount}</div>
+      </div>
+      
+      {/* Block Information */}
+      <div className="bg-pizza-green/20 rounded-lg p-2 mb-4">
+        <div className="flex justify-between items-center mb-1">
+          <div className="flex items-center gap-1">
+            <Blocks size={16} className="text-pizza-green" />
+            <span className="font-bold">Blocks Mined: {blocksCount}</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <Clock size={14} />
+            <span>{txsInCurrentBlock}/3 tx</span>
+          </div>
+        </div>
+        <Progress value={blockProgress} max={100} className="h-2" />
+        <p className="text-xs text-center mt-1">
+          {3 - txsInCurrentBlock} more tx to mine next block
+        </p>
       </div>
       
       {/* Level and Points Display */}
@@ -101,3 +124,4 @@ const TransactionCounter: React.FC<TransactionCounterProps> = ({ txCount, bpm })
 };
 
 export default TransactionCounter;
+
