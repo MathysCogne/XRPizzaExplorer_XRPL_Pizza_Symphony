@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
 import { Transaction } from '@/services/XrplService';
-import { Clock, FileText, Music, ExternalLink, Blocks, Search } from 'lucide-react';
+import { Clock, FileText, Music, ExternalLink, Blocks, Search, ArrowRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 
 interface TransactionDetailsProps {
   transactions: Transaction[];
@@ -14,68 +14,101 @@ interface TransactionDetailsProps {
 const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transactions }) => {
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   
-  // Group transactions by "block" (in a real app this would be actual ledger indexes)
-  const blockGroups = transactions.reduce<Record<string, Transaction[]>>((acc, tx) => {
-    // Create a simple block identifier based on timestamp (in real XRPL these would be ledger indexes)
-    const blockId = Math.floor(tx.timestamp / 10000).toString();
-    if (!acc[blockId]) {
-      acc[blockId] = [];
+  // Group transactions by ledger index (real XRPL data)
+  const ledgerGroups = transactions.reduce<Record<number, Transaction[]>>((acc, tx) => {
+    const ledgerIndex = tx.ledgerIndex || 0;
+    if (!acc[ledgerIndex]) {
+      acc[ledgerIndex] = [];
     }
-    acc[blockId].push(tx);
+    acc[ledgerIndex].push(tx);
     return acc;
   }, {});
   
+  const formatAddress = (address: string, length: number = 8) => {
+    if (!address) return 'N/A';
+    return `${address.substring(0, length)}...${address.substring(address.length - 4)}`;
+  };
+  
+  const getTransactionTypeColor = (type: string) => {
+    switch (type) {
+      case 'Payment': return 'bg-green-100 text-green-800';
+      case 'OfferCreate': return 'bg-blue-100 text-blue-800';
+      case 'OfferCancel': return 'bg-red-100 text-red-800';
+      case 'TrustSet': return 'bg-purple-100 text-purple-800';
+      case 'AccountSet': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="w-full max-w-md bg-white/70 rounded-2xl p-4 shadow-lg">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Blocks className="text-pizza-pink" size={20} />
-          <h3 className="text-xl font-bold">XRPL Explorer</h3>
+          <h3 className="text-xl font-bold">XRPL Live Stream</h3>
         </div>
         <span className="text-sm bg-pizza-pink text-white px-2 py-1 rounded-full">
-          Last {transactions.length} Transactions
+          Last {transactions.length} TX
         </span>
       </div>
       
-      <ScrollArea className="h-48 rounded-md border p-2">
-        {Object.keys(blockGroups).length > 0 ? (
+      <ScrollArea className="h-[550px] rounded-md border p-2">
+        {Object.keys(ledgerGroups).length > 0 ? (
           <div className="space-y-4">
-            {Object.entries(blockGroups).map(([blockId, txs]) => (
-              <div key={blockId} className="bg-white/50 rounded-lg p-2 shadow-sm">
-                <div className="flex items-center justify-between mb-2 border-b pb-1">
-                  <div className="flex items-center gap-1 text-sm font-bold">
-                    <Blocks size={16} className="text-pizza-green" />
-                    <span>Block {blockId}</span>
+            {Object.entries(ledgerGroups)
+              .sort(([a], [b]) => parseInt(b) - parseInt(a)) // Sort by ledger index descending
+              .map(([ledgerIndex, txs]) => (
+              <div key={ledgerIndex} className="bg-white/50 rounded-lg p-3 shadow-sm">
+                <div className="flex items-center justify-between mb-3 border-b pb-2">
+                  <div className="flex items-center gap-2 text-sm font-bold">
+                    <Blocks size={18} className="text-pizza-green" />
+                    <span>Ledger #{ledgerIndex}</span>
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
                     {txs.length} transactions
                   </span>
                 </div>
                 
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {txs.map((tx) => (
                     <div 
                       key={tx.id} 
-                      className="p-2 bg-white/70 rounded-lg shadow-sm hover:bg-pizza-lavender/20 transition-colors cursor-pointer"
+                      className="p-3 bg-white/70 rounded-lg shadow-sm hover:bg-pizza-lavender/20 transition-colors cursor-pointer border border-gray-100"
                       onClick={() => setSelectedTx(tx)}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1">
-                          <FileText size={14} className="text-pizza-pink" />
-                          <span className="font-mono text-xs truncate max-w-[160px]">{tx.id}</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className={`text-xs ${getTransactionTypeColor(tx.type)}`}>
+                            {tx.type}
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-gray-500">
                           <Clock size={12} />
                           {new Date(tx.timestamp).toLocaleTimeString()}
                         </div>
                       </div>
+                      
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-mono text-gray-600">
+                          {formatAddress(tx.account, 8)}
+                        </span>
+                        {tx.destination && (
+                          <>
+                            <ArrowRight size={10} className="text-gray-400" />
+                            <span className="text-xs font-mono text-gray-600">
+                              {formatAddress(tx.destination, 8)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">
-                          {tx.amount.toFixed(2)} XRP
+                          {tx.amount > 0 ? `${tx.amount.toFixed(4)} XRP` : `Fee: ${(tx.fee/1000000).toFixed(4)} XRP`}
                         </span>
                         <div className="flex items-center gap-1 text-pizza-green">
                           <Music size={12} />
-                          <span className="text-xs">Generated note</span>
+                          <span className="text-xs">♪</span>
                         </div>
                       </div>
                     </div>
@@ -85,43 +118,29 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transactions })
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
-            No transactions yet. Start the Pizza Music!
+          <div className="flex flex-col items-center justify-center h-full text-gray-500">
+            <Blocks className="mb-4 opacity-50" size={48} />
+            <p className="text-lg text-center font-semibold mb-2">No transactions yet</p>
+            <p className="text-sm text-center opacity-70 mb-4">Waiting for XRPL mainnet stream...</p>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+              <span>Listening for live transactions</span>
+            </div>
           </div>
         )}
       </ScrollArea>
       
-      {/* Search Explorer Button */}
+      {/* Real XRPL Explorer Link */}
       <div className="mt-3 text-center">
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="w-full">
-              <Search size={14} className="mr-1" />
-              XRPL Explorer Search
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>XRPL Explorer</DialogTitle>
-            </DialogHeader>
-            <div className="text-sm text-muted-foreground mb-3">
-              Enter a transaction ID or address to explore the XRPL (demo only)
-            </div>
-            <div className="flex items-center mb-4">
-              <input 
-                type="text" 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                placeholder="Transaction hash or address..."
-              />
-              <Button className="ml-2" size="sm">
-                <Search size={14} className="mr-1" /> Search
-              </Button>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-3 text-center text-sm text-muted-foreground">
-              This is a simulator. In a real application, this would connect to XRPL's actual data.
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full"
+          onClick={() => window.open('https://livenet.xrpl.org/', '_blank')}
+        >
+          <ExternalLink size={14} className="mr-1" />
+          Open XRPL Explorer
+        </Button>
       </div>
       
       {/* Transaction Detail Modal */}
@@ -129,7 +148,12 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transactions })
         <Dialog open={!!selectedTx} onOpenChange={(open) => !open && setSelectedTx(null)}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Transaction Details</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <Badge className={getTransactionTypeColor(selectedTx.type)}>
+                  {selectedTx.type}
+                </Badge>
+                Transaction Details
+              </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -137,38 +161,55 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transactions })
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Transaction ID</span>
-                    <span className="font-mono text-xs">{selectedTx.id}</span>
+                    <span className="font-mono text-xs break-all">{selectedTx.id}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">Time</span>
+                    <span className="text-sm font-medium text-muted-foreground">Ledger Index</span>
+                    <span className="font-bold">#{selectedTx.ledgerIndex}</span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Timestamp</span>
                     <span>{new Date(selectedTx.timestamp).toLocaleString()}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Account</span>
+                    <span className="font-mono text-xs break-all">{selectedTx.account}</span>
+                  </div>
+                  
+                  {selectedTx.destination && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">Destination</span>
+                      <span className="font-mono text-xs break-all">{selectedTx.destination}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Amount</span>
-                    <span className="font-bold">{selectedTx.amount.toFixed(2)} XRP</span>
+                    <span className="font-bold">
+                      {selectedTx.amount > 0 ? `${selectedTx.amount.toFixed(6)} XRP` : 'No transfer'}
+                    </span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">From</span>
-                    <span className="font-mono text-xs truncate max-w-[200px]">r{selectedTx.id.substring(0, 20)}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">To</span>
-                    <span className="font-mono text-xs truncate max-w-[200px]">r{selectedTx.id.substring(5, 25)}</span>
+                    <span className="text-sm font-medium text-muted-foreground">Fee</span>
+                    <span>{(selectedTx.fee / 1000000).toFixed(6)} XRP</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-muted-foreground">Status</span>
-                    <span className="text-green-500 font-medium">Validated</span>
+                    <span className="text-green-500 font-medium">✓ Validated</span>
                   </div>
                 </div>
               </div>
               
               <div>
-                <h4 className="text-sm font-bold mb-2">Music Generation Data</h4>
+                <h4 className="text-sm font-bold mb-2 flex items-center gap-1">
+                  <Music size={16} />
+                  Music Generation Data
+                </h4>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -178,16 +219,24 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transactions })
                   </TableHeader>
                   <TableBody>
                     <TableRow>
-                      <TableCell>Note Frequency</TableCell>
-                      <TableCell>{(selectedTx.amount % 500 + 100).toFixed(2)} Hz</TableCell>
+                      <TableCell>Base Frequency</TableCell>
+                      <TableCell>{((selectedTx.amount || selectedTx.fee/1000000) % 500 + 200).toFixed(2)} Hz</TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell>Waveform Type</TableCell>
-                      <TableCell>{['Sine', 'Square', 'Sawtooth', 'Triangle'][Math.floor(selectedTx.amount % 4)]}</TableCell>
+                      <TableCell>Transaction Type Note</TableCell>
+                      <TableCell>
+                        {selectedTx.type === 'Payment' ? 'Major scale' : 
+                         selectedTx.type === 'OfferCreate' ? 'Minor scale' :
+                         selectedTx.type === 'OfferCancel' ? 'Diminished' : 'Pentatonic'}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell>Ledger Harmonic</TableCell>
+                      <TableCell>L{selectedTx.ledgerIndex % 12} ({['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][selectedTx.ledgerIndex % 12]})</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell>Duration</TableCell>
-                      <TableCell>{(selectedTx.amount % 500 / 1000 + 0.1).toFixed(2)}s</TableCell>
+                      <TableCell>{((selectedTx.amount || 1) % 2 + 0.5).toFixed(2)}s</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -195,7 +244,11 @@ const TransactionDetails: React.FC<TransactionDetailsProps> = ({ transactions })
               
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setSelectedTx(null)}>Close</Button>
-                <Button variant="outline" className="flex items-center gap-1">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-1"
+                  onClick={() => window.open(`https://livenet.xrpl.org/transactions/${selectedTx.id}`, '_blank')}
+                >
                   <ExternalLink size={14} />
                   View on XRPL Explorer
                 </Button>
